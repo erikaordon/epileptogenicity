@@ -44,6 +44,7 @@ with(colData(rse_gene_SRP153743), tapply(assigned_gene_prop, tumor, summary))
 
 rse_gene_SRP153743_unfiltered <- rse_gene_SRP153743
 
+par(mar = rep(2, 4))
 hist(rse_gene_SRP153743$assigned_gene_prop)
 
 table(rse_gene_SRP153743$assigned_gene_prop < 0.5)
@@ -58,5 +59,67 @@ rse_gene_SRP153743 <- rse_gene_SRP153743[gene_means > 0.1, ]
 
 round(nrow(rse_gene_SRP153743) / nrow(rse_gene_SRP153743_unfiltered) * 100, 2)
 
+# ------------------------------------------------------------------------------
+
 # Normalización de los datos
 
+# En caso de no contar con la librería descargada:
+# BiocManager::install("edgeR", update=F)
+library("edgeR")
+
+# Creación de la matriz de conteos.
+dge <- DGEList(
+  counts=assay(rse_gene_SRP153743, "counts"),
+  genes=rowData(rse_gene_SRP153743)
+)
+
+# Normalización de los datos utilizando TMM para edgeR.
+dge <- calcNormFactors(dge)
+
+# ------------------------------------------------------------------------------
+
+# Expresión diferencial
+
+# Exploración de datos:
+library("ggplot2")
+ggplot(as.data.frame(colData(rse_gene_SRP153743)), aes(y=assigned_gene_prop, x=tumor)) +
+  geom_boxplot() +
+  theme_bw(base_size=20) +
+  ylab("Assigned Gene Prop") +
+  xlab("Tumor Group")
+
+# Modelo estadístico: (CHECAR)
+mod <- model.matrix(~ tumor + sra_attribute.age + sra_attribute.sex + assigned_gene_prop,
+  data = colData(rse_gene_SRP153743)
+  )
+colnames(mod)
+
+# Usar limma para el análisis de expresión diferencial:
+library("limma")
+#Ajustar el tamaño de la imagen
+par(mar = rep(2, 4))
+# Crear el objeto DGEListSe produce la gráfica para visualizar los datos.
+vGene <- voom(dge, mod, plot=TRUE)
+
+eb_results <- eBayes(lmFit(vGene))
+
+de_results <- topTable(
+  eb_results,
+  coef=2,
+  number=nrow(rse_gene_SRP153743),
+  sort.by="none"
+)
+
+dim(de_results)
+head(de_results)
+
+# Selección de genes con una expresión diferencial significativa
+table(de_results$adj.P.Val < 0.05)
+
+# Visualización de datos
+plotMA(eb_results, coef=2)
+
+#volcano:
+volcanoplot(eb_results, coef=2, highlight=4, names=de_results$gene_name)
+
+#Visualización de genes
