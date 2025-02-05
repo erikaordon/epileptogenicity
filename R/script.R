@@ -116,6 +116,25 @@ mod <- model.matrix(~ tumor + sra_attribute.age + sra_attribute.sex + assigned_g
   )
 colnames(mod)
 
+#-------------------------------------------------------------------------------
+#Verificar modelo:
+# Para visualizar el modelo:
+# Data frame para la visualización.
+sampleData <- data.frame(
+  condition = colData(rse_gene_SRP153743)$tumor,
+  sex = colData(rse_gene_SRP153743)$sra_attribute.sex,
+  age= colData(rse_gene_SRP153743)$sra_attribute.age,
+  assigned_gene_prop = colData(rse_gene_SRP153743)$assigned_gene_prop
+)
+# Creación de las imágenes
+vd <- ExploreModelMatrix::VisualizeDesign(
+  sampleData = sampleData,
+  designFormula = ~ condition + age + sex + assigned_gene_prop,
+  textSizeFitted = 3
+)
+cowplot::plot_grid(plotlist=vd$plotlist, ncol=1)
+#--------------------------------------------------------------------------------
+
 # Usar limma para el análisis de expresión diferencial:
 library("limma")
 #Ajustar el tamaño de la imagen
