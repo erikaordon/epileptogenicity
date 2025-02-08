@@ -84,9 +84,190 @@ with(colData(rse_gene_SRP223512), tapply(assigned_gene_prop, treatment, summary)
 rse_gene_SRP223512_unfiltered <- rse_gene_SRP223512
 ```
 
-```{r fig.align='center', fig.cap='histograma', fig.width=14, fig.height=7}
-par(mar = rep(2, 4))
+```{r fig.align='center', fig.cap='Frecuencias de la proporción de genes', fig.width=14, fig.height=7}
 hist(rse_gene_SRP223512$assigned_gene_prop)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+En la figura 1 se muestra la frecuencia de las muestras según la proporción de los genes. Sirve para visualizar las muestras que se pueden conservar para el análisis. 
+```{r}
+# Se muestra de manera más numéerica el resultado del histograma
+table(rse_gene_SRP223512$assigned_gene_prop < 0.3)
+table(rse_gene_SRP223512$assigned_gene_prop < 0.4)
+table(rse_gene_SRP223512$assigned_gene_prop < 0.5)
+```
+
+Como podemos ver con los resultados anteriores, el mejor humbral para obtener la cantidad de muestras para trabajar es la proporción de 0.3. Debido a que no buscamos un umbral muy estricto y quedarnos sin una buena cantidad de muestras para analizar. 
+
+```{r}
+rse_gene_SRP223512 <- rse_gene_SRP223512[, rse_gene_SRP223512$assigned_gene_prop > 0.3]
+```
+
+Resumen de los niveles medios de expresión de genes:  
+
+```{r include=FALSE}
+gene_means <- rowMeans(assay(rse_gene_SRP223512, "counts"))
+```
+
+```{r}
+summary(gene_means)
+```
+
+Se eligió un umbral de 0.1 para la elegir los genes con los que se trabajará en el análisis. El resto de genes se eliminan. De decir, que los que los genes que tienen una media menor a 0.1 se eliminan. 
+
+```{r}
+rse_gene_SRP223512 <- rse_gene_SRP223512[gene_means > 0.1, ]
+dim(rse_gene_SRP223512)
+# Porcentaje de genes conservados: 
+round(nrow(rse_gene_SRP223512) / nrow(rse_gene_SRP223512_unfiltered) * 100, 2)
+```
+
+```{r include=FALSE}
+# Normalización
+
+library("edgeR")
+
+dge <- DGEList(
+  counts = assay(rse_gene_SRP223512, "counts"),
+  genes = rowData(rse_gene_SRP223512)
+  )
+dge <- calcNormFactors(dge)
+
+# Exploración de los datos: 
+library("ggplot2")
+```
+
+```{r fig.align='center', fig.cap='Boxplot con información sobre la proporción de genes con respecto a cada tratamiento', fig.width=14, fig.height=7}
+ggplot(as.data.frame(colData(rse_gene_SRP223512)), aes(y=assigned_gene_prop, x=treatment)) +
+  geom_boxplot() +
+  theme_bw(base_size = 20) +
+  ylab("Assigned Gene Prop") +
+  xlab("Treatment")
+```
+
+En la figura 2, se evidencía que la media de la proporción de genes es mayor en el tratamiento con ácido kainico. 
+
+```{r}
+# Modelo estadístico:
+mod <- model.matrix(
+  ~ treatment + sra_attribute.neun + assigned_gene_prop,
+  data = colData(rse_gene_SRP223512)
+)
+
+# Se muestran los nombres de las columnas para evitar errores. 
+colnames(mod)
+
+# Comprobación del modelo estadístico:
+# Para visualizar el modelo:
+# Data frame para la visualización.
+sampleData <- data.frame(
+  treatment = rse_gene_SRP223512$treatment,
+  sra_attribute.neun = rse_gene_SRP223512$sra_attribute.neun
+)
+# Creación de las imágenes:
+vd <- ExploreModelMatrix::VisualizeDesign(
+  sampleData = sampleData,
+  designFormula = ~ 0 + treatment + sra_attribute.neun,
+  textSizeFitted = 3
+)
+```
+
+```{r fig.align='center', fig.cap='Cuadro con la comprobación del modelo de regresión lineal aplicado anteriormente', fig.width=14, fig.height=7}
+cowplot::plot_grid(plotlist=vd$plot, nrow = 1)
+```
+
+En el cuadro anterior, podemos darnos cuenta que el modelo fue correctamente planteado, esto se puede notar porque, si restamos la columna titulada negative a la titulada positive el resultado es sra_attribute.neunpositive, lo que quiere decir que tuvo un efecto el receptor NeuN en las neuronas. Si se resta la fila de placebo a la de epilepsia en la columna positive, nos afirma que efectivamente, la fila de placebo es el control experimental mientras que la segunda fila de epilepsia afirma que ese es el grupo al que se aplicó el ácido kainico y por tanto el grupo experimental. 
+
+*NOTA:* 
+Para recrear la imagen, no se aplicó el intercepto y tampoco se contemplo la variable continua, que en este caso es la proporción de genes. Pues se sabe cual es esta variable y para visualizar de mejor manera se obvió. Por otro lado, esta variable si fue implementada en la construcción del modelo, junto con la aplicación del intercepto, para tener un modelo más confiable. 
+
+```{r}
+# Usar limma para el análisis de expresión diferencial:
+library("limma")
+# Crear el objeto DGEList
+# Se produce la gráfica para visualizar los datos.
+```
+
+```{r fig.align='center', fig.cap='Gráfica para ver la desviación estándar', fig.width=14, fig.height=7}
+vGene <- voom(dge, mod, plot=T)
+```
+
+La gráfica anterior muestra los genes, es decir, cada punto es un gen. Muestra la buena calidad de los datos. 
+
+```{r}
+# Utiliza el modelo bayesiano para el análisis de expresión diferencial
+# Además, ajusta el modelo lineal
+eb_results <- eBayes(lmFit(vGene))
+
+# Selecciona los genes con expresión diferencial significativa.
+de_results <- topTable(
+  eb_results,
+  coef=2,
+  number=nrow(rse_gene_SRP223512),
+  sort.by="none"
+)
+
+# Pequeña exploración y visualización de los datos.
+dim(de_results)
+head(de_results)
+
+# Selección de genes con una expresión diferencial significativa
+table(de_results$adj.P.Val < 0.05)
+```
+
+
+```{r fig.align='center', fig.cap='plotMA para evaluar la relación entre la expresión media y el cambio en la expresión', fig.width=14, fig.height=7}
+# Visualización de datos - plotMA
+plotMA(eb_results, coef=2)
+```
+
+Cada punto en la gráfica anterior muestra un gen, se perciben más genes que se mentienen cerca del cero, es decir, que no tienen una expresión significativa. Hay más genes que se tienen un log fold-change con expresión negativa. 
+
+```{r fig.align='center', fig.cap='El genes con expresión diferencial significativa resaltados en color azul', fig.width=14, fig.height=7}
+# Visualización de datos - Volcano:
+volcanoplot(eb_results, coef=2, highlight=4, names=de_results$gene_name)
+```
+
+La imagen muestra 4 genes particulares que se encuentran diferencialmente expresados en color azul. 
+
+```{r fig.align='center', fig.cap='Heatmap con los 50 genes con expresión más significativa', fig.width=14, fig.height=7}
+# Extraer los 50 genes con expresión más significativa
+exprs_heatmap <- vGene$E[rank(de_results$P.Value) <= 50, ]
+
+# Data frame
+df <- as.data.frame(colData(rse_gene_SRP223512)[, c("treatment", "sra_attribute.neun")])
+
+# Nombre de las columnas del data frame
+colnames(df) <- c("treatment", "Neun/marcador")
+
+# Heatmap
+# Si no se encuentra instalado el paquete, correr la siguiente línea:
+# install.packages("pheatmap")
+library("pheatmap")
+pheatmap(
+  exprs_heatmap,
+  cluster_rows = T,
+  cluster_cols = T,
+  show_rownames = F,
+  show_colnames = F,
+  annotation_col = df,
+)
+```
+
+```{r fig.align='center', fig.cap='Heatmap con los 50 genes con expresión más significativa', fig.width=14, fig.height=7}
+library("RColorBrewer")
+
+# PCA - con el tratamiento: Kainate/Sham
+col.group <- as.factor(df$treatment)
+levels(col.group) <- brewer.pal(nlevels(col.group), "Set1")
+
+col.group <- as.character(col.group)
+
+plotMDS(vGene$E, labels = df$treatment, col=col.group)
+
+# PCA - con el Neun: positivo/negativo
+col.neun <- df$`Neun/marcador`
+levels(col.neun) <- brewer.pal(nlevels(col.neun), "Dark2")
+col.neun <- as.character(col.neun)
+plotMDS(vGene$E, labels = df$`Neun/marcador`, col=col.neun)
+```
+
