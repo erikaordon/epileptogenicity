@@ -1,0 +1,92 @@
+---
+title: "Neuronal and glial DNA methylation and gene expression changes in early epileptogenesis"
+author: "Erika Nathalia Ordoñez Guzmán"
+date: "2025-02-07"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introducción: 
+
+Según los datos la Organización Mundial de la Salud proporcionados en 2024: "50 millones de personas padecen epilepsia" además "se estima que el 70% de las personas con epilepsia podrían vivir sin convulsiones si se diagnosticaran y trataran adecuadamente". Este es un transtorno que afecta principalmente a las células que conforman el cerebro. El artículo: "Neuronal and glial DNA methylation and gene expression changes in early epileptogenesis" trabaja con células neuronales y de glía como lo es la microglía. Este padecimiento se caracteriza por descargas eléctricas en el cerebro y afectan negativamente a las personas que la padecen. Estudios recientes, resaltan que la metilación tiene un papel importante en este proceso, por lo que el equipo de trabajo dirigido por Toni C Berger, son pioneros en este campo de estudio. 
+
+Por la naturaleza del proceso de metilación, es un proceso heredable, modificable y estable, pero temporal, además de voluble y suceptible a cambios por influencia ambiental. Por eso, en el artículo se experimenta con células neuronales de ratón, en la inducción a la metilación con ácido kainico, que son el grupo esperimental, mientras que el control se trató con solución salina. Se buscó encontrar si existe una diferencia significativa de expresión en ambas condiciones. 
+Con este artículo, se busca encontrar el efecto que tiene la metilación en la patología y así, estar un paso más cerca de encontrar agentes terapéuticos para contrarrestar su efecto y apoyar a la salud mundial. 
+
+El set de datos obtenido fue obtenido desde recount3, cuenta con 28 muestras. Los datos demuestran las lecturas del mDNA que se dieron como consecuencia de la metilación y secuenciación de mRNA (mRNAseq). 
+
+## Objetivos del proyecto:
+
+- Encontrar blancos terapéuticos en células neuronales y glía que juegan un papel crucial en la epilepsia. 
+
+- Analizar el resultado del mRNAseq para comprobar la diferencia de expresión y correlacionarlo con la epilepsia.  
+
+## Resultados: 
+
+
+
+```{r include = FALSE}
+# Abrir librería
+library("recount3")
+
+# Cargar datos de expresión génica
+mouse_projects <- available_projects("mouse")
+# Crear objeto de rse para manipularlo con los datos de expresión génica.
+rse_gene_SRP223512 <- create_rse(
+  subset(
+    mouse_projects,
+    project == "SRP223512" & project_type == "data_sources"
+  )
+)
+
+assay(rse_gene_SRP223512, "counts") <- compute_read_counts(rse_gene_SRP223512)
+```
+
+```{r}
+# Explorar objeto de rse
+rse_gene_SRP223512$sra.sample_attributes[1:5]
+```
+
+```{r include=FALSE}
+rse_gene_SRP223512 <- expand_sra_attributes(rse_gene_SRP223512)
+colData(rse_gene_SRP223512)[
+  ,
+  grepl("^sra_attribute", colnames(colData(rse_gene_SRP223512))
+  )
+]
+
+# Cambiar las dos variables a factores:
+rse_gene_SRP223512$sra_attribute.treatment <- factor(
+  rse_gene_SRP223512$sra_attribute.treatment
+)
+rse_gene_SRP223512$sra_attribute.neun <- factor(
+  rse_gene_SRP223512$sra_attribute.neun
+)
+
+# Variables de interés
+summary(as.data.frame(colData(rse_gene_SRP223512)
+  [
+    ,
+    grepl("^sra_attribute.[treatment|neun]", colnames(colData(rse_gene_SRP223512)))
+  ]))
+
+rse_gene_SRP223512$treatment <- factor(ifelse(rse_gene_SRP223512$sra_attribute.treatment == "Kainate", "epilepsy", "placebo"))
+table(rse_gene_SRP223512$treatment)
+
+rse_gene_SRP223512$assigned_gene_prop <- rse_gene_SRP223512$recount_qc.gene_fc_count_all.assigned / rse_gene_SRP223512$recount_qc.gene_fc_count_all.total
+summary(rse_gene_SRP223512$assigned_gene_prop)
+
+with(colData(rse_gene_SRP223512), tapply(assigned_gene_prop, treatment, summary))
+
+rse_gene_SRP223512_unfiltered <- rse_gene_SRP223512
+```
+
+```{r fig.align='center', fig.cap='histograma', fig.width=14, fig.height=7}
+par(mar = rep(2, 4))
+hist(rse_gene_SRP223512$assigned_gene_prop)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
