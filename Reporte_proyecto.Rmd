@@ -253,7 +253,10 @@ pheatmap(
 )
 ```
 
-```{r fig.align='center', fig.cap='Heatmap con los 50 genes con expresión más significativa', fig.width=14, fig.height=7}
+En ell heatmap anterior se puede notar que las áreas que presentan un color roja más intenso son las que tienen una expresión diferencial más elevandas que el resto y corresponden al grupo experimental, es decir, son neuronas que se trataron con ácido kainico, aunque cabe resaltar que también se presentan células de glía que muestran con epilepsia y que no muestran signos del marcador. 
+
+
+```{r fig.align='center', fig.cap='PCA de expresión en grupos experimentales', fig.width=14, fig.height=7}
 library("RColorBrewer")
 
 # PCA - con el tratamiento: Kainate/Sham
@@ -263,11 +266,70 @@ levels(col.group) <- brewer.pal(nlevels(col.group), "Set1")
 col.group <- as.character(col.group)
 
 plotMDS(vGene$E, labels = df$treatment, col=col.group)
+```
 
+En el PCA anterior se muestran los grupos experimentales en rojo y en azul los controles. La imagen nos permite apreciar que no hay una marcada diferencia en la expresión dentro de estos dos grupos. 
+
+```{r fig.align='center', fig.cap='PCA de expresión en grupos con el marcador Neun', fig.width=14, fig.height=7}
 # PCA - con el Neun: positivo/negativo
 col.neun <- df$`Neun/marcador`
 levels(col.neun) <- brewer.pal(nlevels(col.neun), "Dark2")
 col.neun <- as.character(col.neun)
 plotMDS(vGene$E, labels = df$`Neun/marcador`, col=col.neun)
 ```
+
+En el PCA anterior se muestran diferentes muestras, algunas presentan el marcador fluorescente NeuN para identificar a las neuronas de la glía, por lo que las que se presentan como positive corresponden a las neuronas y las que se presentan como negative correspondden a las células de la glía. En conclusión nos permite ver que efectivamente existe una expresión diferencial entre ambos grupos.  
+
+## Análisis de resultados: 
+
+El artículo "Neuronal and glial DNA methylation and gene expression changes in early epileptogenesis" menciona que se encontrón la expresión diferencial de los siguientes genes que están relacionadoos con la epilepsia, como son: HDAC11, SPP1, GAL, DRD1 y SV2C. Sin embargo, en un análisis de expresión realizado, para mostrar los genes que presentan una expresión diferencial significativa se llevó a cabo el siguiente voolcano plot. 
+
+```{r fig.align='center', fig.cap='El genes con expresión diferencial significativa resaltados en color azul', fig.width=14, fig.height=7}
+# Código para descargar el paquete de EnhancedVolcano en caso de no tenerlo descargado
+#if (!requireNamespace('BiocManager', quietly=TRUE))
+ # install.packages('BiocManager')
+
+#BiocManager::install('EnhancedVolcano') 
+
+# Cargar el paquete: 
+library(EnhancedVolcano)
+
+EnhancedVolcano(de_results,
+  lab=de_results$gene_name,
+  x='logFC',
+  y='P.Value')
+```
+
+En la imagen nos podemos dar cuenta que de la lista de genes relacionados con la epilepsia resalta uno, por ser, además, el gen que presentó la expresión diferencial más elevada, este es el SPP1. 
+
+En las siguientes líneas de código presento la metodología para encontrar los genes que presentan mayor expresión, aunado con los valores que corresponden a los genes mencionados en el artículo. 
+
+**NOTA:** Se eligieron únicamente 4 genes extremos tanto positivos como negativos, únicamente para ilustrar que los genes mencionados en el artículo, salvo uno, no se encuentran entre los primeros cuatro con mayor expresión. 
+
+```{r}
+# Nuevo data frame con los genes especificados en el artículo 
+new_data_frame <- de_results[de_results$gene_name %in% c('Spp1', 'Hdac11', 'Gal', 'Drd1', 'Sv2c'), ]
+
+# Se muestra el data frame para hacer evidente que los genes si se encuentran en el análisis
+new_data_frame
+
+# Se buscan los genes con mayor expresión diferencial negativa
+head(de_results[order(de_results$logFC), ], 4)
+# A su vez también se buscan los que cuentan con mayor expresión diferencial positiva:
+tail(de_results[order(de_results$logFC), ], 4)
+
+#Nuevo data frame
+new_data_frame <- rbind(new_data_frame, de_results[de_results$gene_name %in% c('Spp1', 'Trh', 'Lilr4b', 'Lilrb4a', 'Folh1', 'Cldn10', 'Plk5', 'Cyp4f15'), ])
+
+# Ordenar los valores de acuerdo con su expresión difernecial:
+new_data_frame <- new_data_frame[order(new_data_frame$logFC), ]
+new_data_frame
+```
+
+
+## Conclusión:
+
+
+
+## Referencias: 
 
