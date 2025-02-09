@@ -231,6 +231,7 @@ La imagen muestra 4 genes particulares que se encuentran diferencialmente expres
 
 ```{r fig.align='center', fig.cap='Heatmap con los 50 genes con expresión más significativa', fig.width=14, fig.height=7}
 # Extraer los 50 genes con expresión más significativa
+
 exprs_heatmap <- vGene$E[rank(de_results$P.Value) <= 50, ]
 
 # Data frame
@@ -238,6 +239,14 @@ df <- as.data.frame(colData(rse_gene_SRP223512)[, c("treatment", "sra_attribute.
 
 # Nombre de las columnas del data frame
 colnames(df) <- c("treatment", "Neun/marcador")
+
+# Permanecemos con los nombres dados por ENSEMBL. 
+original_names <- rownames(exprs_heatmap)
+
+# Cambiamos los nombres de las filas para integrarlas al heatmap.
+rownames(exprs_heatmap) <- rowRanges(rse_gene_SRP223512)$gene_name[
+  match(rownames(exprs_heatmap), rowRanges(rse_gene_SRP223512)$gene_id)
+]
 
 # Heatmap
 # Si no se encuentra instalado el paquete, correr la siguiente línea:
@@ -247,9 +256,9 @@ pheatmap(
   exprs_heatmap,
   cluster_rows = T,
   cluster_cols = T,
-  show_rownames = F,
+  show_rownames = T,
   show_colnames = F,
-  annotation_col = df,
+  annotation_col = df
 )
 ```
 
@@ -326,10 +335,33 @@ new_data_frame <- new_data_frame[order(new_data_frame$logFC), ]
 new_data_frame
 ```
 
+Ahora para comprobar la posición en la que se encuentran los genes que están relacionados con la epilepsia, se ordenará la tabla de acuerdo a su expresión diferencial. 
+
+```{r}
+de_results <- de_results[order(de_results$logFC), ]
+# Data frame ordenado
+head(de_results)
+
+# Comprobación de la posición que tiene cada gen en la tabla principal. 
+# Gene Hdac11
+which(de_results$gene_name=='Hdac11')
+# Gene Spp1
+which(de_results$gene_name=='Spp1')
+# Gene Gal
+which(de_results$gene_name=='Gal')
+# Gene Drd1
+which(de_results$gene_name=='Drd1')
+# Gene Sv2c
+which(de_results$gene_name=='Sv2c')
+```
+
+Estos últimos resultados demuestran que aunque no fueron los genes que mostraron mayor expresión, si tuvieron una diferencia. Y que además, el PCA que de la figura 9 que ambos tipos de marcadores mostraron expresión diferencial, es decir, tanto neuronas como glía, además, como se menciona en el artículo, su propósito se cumplió. Se demostró con los datos que se encuentra una metilación diferencial. 
 
 ## Conclusión:
 
+Como se mencionó con anterioridad visualmente con los PCA, se presentó expresión diferencial tanto en nueronas, positivas para el marcador NeuN y glía, negativas para el marcador. Al mismo tiempo, el PCA donde se encuentran las muestras de placebo y epilepsia, demuestra que las muestras sin importar si se encuentran en el grupo control (placebo) o experimental (epilepsia) no mostraron diferencias entre los grupos con respecto a su expresión. Salvo en las primeras dimensiones. El resto y la mezcla entre las muestras puede deberse a que no hay cambios drásticos en la expresión. Es decir, que existe mucha variabilidad entre las muestras. Sin mencionar que en el grupo control, al que no se indujo a la epilepsia existían tanto células neuronales como células de la glía, mismo caso ocurrió con las muestras experimentales, por lo que no se ve clara la separación entre ambos grupos.  
 
+Con todo esto podemos concluir que efectivamente existe un cambio en la expresión tanto en glía como en neuronas.Por otro lado, existen genes que no están directamente relacionados con la epilpsia, pero que mostraron niveles altos de expresión y aunque no se compara mucho la expresión con los directamente relacionados, si presentaron expresión diferencial. 
 
 ## Referencias: 
 
