@@ -440,6 +440,8 @@ Como se mencionó con anterioridad visualmente con los PCA, se presentó expresi
 
 Con todo esto podemos concluir que efectivamente existe un cambio en la expresión tanto en glía como en neuronas.Por otro lado, existen genes que no están directamente relacionados con la epilpsia, pero que mostraron niveles altos de expresión y aunque no se compara mucho la expresión con los directamente relacionados, si presentaron expresión diferencial. 
 
+Con respecto a los valores p ajustados y al tamaño de los círculos, parecen confirmar la información.
+
 ## Referencias: 
 
 Berger, T. C., Vigeland, M. D., Hjorthaug, H. S., Etholm, L., Nome, C. G., Taubøll, E., Heuser, K., & Selmer, K. K. (2019). Neuronal and glial DNA methylation and gene expression changes in early epileptogenesis. PLoS ONE, 14(12), e0226575. https://doi.org/10.1371/journal.pone.0226575
