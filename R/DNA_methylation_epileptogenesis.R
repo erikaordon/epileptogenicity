@@ -189,3 +189,71 @@ col.neun <- df$`Neun/marcador`
 levels(col.neun) <- brewer.pal(nlevels(col.neun), "Dark2")
 col.neun <- as.character(col.neun)
 plotMDS(vGene$E, labels = df$`Neun/marcador`, col=col.neun)
+
+#-------------------------------------------------------------------------------
+
+# Enriquecimiento:
+
+# Correr las siquientes líneas en caso de que no se encuentre instalado el paquete de GEOquery
+#if (!require("BiocManager", quietly = TRUE))
+ #   install.packages("BiocManager")
+
+#BiocManager::install("GEOquery")
+
+#if (!requireNamespace("BiocManager", quietly = TRUE)) {
+ #   install.packages("BiocManager")
+#}
+
+#BiocManager::install("clusterProfiler")
+
+# Cargar el paquete:
+library(GEOquery)
+library(clusterProfiler)
+library(org.Mm.eg.db)
+
+# Para hacer un análisis de enriquecimiento
+ego <- enrichGO(gene = de_results$gene_name,
+                OrgDb = org.Mm.eg.db,
+                keyType = "SYMBOL",  # Corregido: "keyType" en minúsculas
+  # Queremos analizar los procesos biológicos.
+                ont = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.05)
+
+# Para lo que es necesario cambiar el formato en que se encuentran los identificadores que regresa recount3.
+# Se eliminan los puntos decimales para evitar problemas en el análisis.
+ensembl_ids <- rownames(assay(rse_gene_SRP223512))
+ensembl_ids_clean <- sub("\\..*", "", ensembl_ids)
+
+library(AnnotationDbi)
+
+# Mapear identificadores
+gene_symbols <- mapIds(
+     org.Mm.eg.db,
+     keys = ensembl_ids_clean,
+     column = 'SYMBOL',
+     keytype = 'ENSEMBL',
+     multiVals = 'first'
+)
+
+# Pequeño filtrado para evitar problemas posteriores.
+important_genes <- na.omit(gene_symbols)
+
+# Una vez más se hace el análisis de enriquecimiento pero con datos limpios y filtrados, se conserva el resto de los parámetros.
+ego <- enrichGO(
+     gene=important_genes,
+     OrgDb = org.Mm.eg.db,
+     keyType = 'SYMBOL',
+     ont = 'BP',
+     pAdjustMethod = 'BH',
+     pvalueCutoff = 0.05
+)
+
+# Se muestra el dotplot para observar los resultados.
+dotplot(ego, showCategory=20)
+
+genes_entrez <- bitr(important_genes, fromType = 'SYMBOL', toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+
+# Enriquecimiento de rutas metabólicas.
+kegg <- enrichKEGG(gene = genes_entrez$ENTREZID, organism = 'mmu')
+dotplot(kegg, showCategory=15)
