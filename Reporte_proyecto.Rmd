@@ -361,7 +361,7 @@ Estos últimos resultados demuestran que aunque no fueron los genes que mostraro
 
 Por últimmo, para ir un poco más allá en el análisis, se realizó un análisis de enriquecimiento con relación a la ontología génica (GO) de NCBI. De esta manera anaalizar de una menra más detallada los genes y su función biológica según su pvalue ajustado. 
 
-```{r fig.align='center', fig.cap='Enriquecimiento para nalizar procesos biológicos', fig.width=14, fig.height=7}
+```{r fig.align='center', fig.cap='Enriquecimiento para analizar procesos biológicos', fig.width=14, fig.height=7}
 # Correr las siquientes líneas en caso de que no se encuentre instalado el paquete de GEOquery 
 #if (!require("BiocManager", quietly = TRUE))
  #   install.packages("BiocManager")
@@ -430,6 +430,9 @@ kegg <- enrichKEGG(gene = genes_entrez$ENTREZID, organism = 'mmu')
 dotplot(kegg, showCategory=15)
 ```
 
+Dentro de los procesos biológicos cuyos genes presentan una expresión diferencial significativa de acuerdo con su valor p ajustado, es justamente la regulación de la neurogénesis, es decir, está relacionado con el tema de interés. Aunque los primeros hablan de la respuesta inmune innata y la glía corresponde a la respuesta del sistema inmune innato, lo que explicaría que esos genes se encuentren sobreexpresados para sobrellevar la enfermedad y desarrollo de la epilepsia. Toda esta información con respecto a la figura 11. 
+
+Por otro lado, la figura 12, es un poco más detallado  con respecto al tema central de la epilepsia, como lo es la interacción del receptor-ligando que tiene que ver con el marcador NeuN que permite identificar entre glía y células neuronales. 
 
 ## Conclusión:
 
@@ -439,3 +442,8 @@ Con todo esto podemos concluir que efectivamente existe un cambio en la expresi�
 
 ## Referencias: 
 
+Berger, T. C., Vigeland, M. D., Hjorthaug, H. S., Etholm, L., Nome, C. G., Taubøll, E., Heuser, K., & Selmer, K. K. (2019). Neuronal and glial DNA methylation and gene expression changes in early epileptogenesis. PLoS ONE, 14(12), e0226575. https://doi.org/10.1371/journal.pone.0226575
+
+Berger, T. C., Vigeland, M. D., Hjorthaug, H. S., Etholm, L., Nome, C. G., Taubøll, E., Heuser, K., & Selmer, K. K. (2019b). Neuronal and glial DNA methylation and gene expression changes in early epileptogenesis. PLoS ONE, 14(12), e0226575. https://doi.org/10.1371/journal.pone.0226575
+
+World Health Organization: WHO. (2024, 7 febrero). Epilepsy. https://www.who.int/es/news-room/fact-sheets/detail/epilepsy
